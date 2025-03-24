@@ -98,27 +98,75 @@ class MetroAgi:
     def en_hizli_rota_bul(self, baslangic_id: str, hedef_id: str) -> Optional[Tuple[List[Istasyon], int]]:
         """A* algoritması kullanarak en hızlı rotayı bulur
 
-        Bu fonksiyonu tamamlayın:
-        1. Başlangıç ve hedef istasyonların varlığını kontrol edin
-        2. A* algoritmasını kullanarak en hızlı rotayı bulun
-        3. Rota bulunamazsa None, bulunursa (istasyon_listesi, toplam_sure) tuple'ı döndürün
-        4. Fonksiyonu tamamladıktan sonra, # TODO ve pass satırlarını kaldırın
+        Parametreler:
+          - baslangic_id: Başlangıç istasyonunun id'si
+          - hedef_id: Hedef istasyonunun id'si
 
-        İpuçları:
-        - heapq modülünü kullanarak bir öncelik kuyruğu oluşturun, HINT: pq = [(0, id(baslangic), baslangic, [baslangic])]
-        - Ziyaret edilen istasyonları takip edin
-        - Her adımda toplam süreyi hesaplayın
-        - En düşük süreye sahip rotayı seçin
+        Dönen Değer:
+          - Eğer rota bulunamazsa None
+          - Bulunursa, (istasyon_listesi, toplam_sure) tuple'ı
         """
-        # TODO: Bu fonksiyonu tamamlayın
-        pass
+        # Baslangıc ve hedef istasyonlarin varligini kontrol et
         if baslangic_id not in self.istasyonlar or hedef_id not in self.istasyonlar:
             return None
 
         baslangic = self.istasyonlar[baslangic_id]
         hedef = self.istasyonlar[hedef_id]
-        ziyaret_edildi = set()
 
+        # Ziyaret edilmis istasyonlari ve maliyet bilgilerini takip et
+        ziyaret_edildi = set()
+        g_maliyetler = {baslangic: 0}
+        path = {}  # Rotayi yeniden insa etmek icin ebeveyn istasyonlari izle
+
+        # Oncelik kuyrugu
+        pq = [(0, id(baslangic), baslangic)]
+
+        while pq:
+            # En düşük f_maliyete sahip istasyonu sec
+            f_maliyet, _, mevcut_istasyon = heapq.heappop(pq)
+
+            # Zaten ziyaret edildiyse atla
+            if mevcut_istasyon in ziyaret_edildi:
+                continue
+
+            # Hedef istasyona ulasildıysa rotayi olustur
+            if mevcut_istasyon is hedef:
+                # Rotayi ebeveynler dict'i kullanarak yeniden insa et
+                rota = []
+                while mevcut_istasyon:
+                    rota.insert(0, mevcut_istasyon)
+                    mevcut_istasyon = path.get(mevcut_istasyon)
+
+                # Toplam sureyi hesapla
+                toplam_sure = g_maliyetler[hedef]
+                return (rota, toplam_sure)
+
+            # Mevcut istasyonu ziyaret edildi olarak isaretle
+            ziyaret_edildi.add(mevcut_istasyon)
+
+            # Komsu istasyonlari kesfet
+            for komsu, komsu_sure in mevcut_istasyon.komsular:
+                if komsu in ziyaret_edildi:
+                    continue
+
+                # Mevcut yolun maliyetini hesapla
+                g_maliyet = g_maliyetler.get(mevcut_istasyon, 0) + komsu_sure
+
+                # Daha iyi bir yol bulunduysa guncelle
+                if komsu not in g_maliyetler or g_maliyet < g_maliyetler[komsu]:
+                    g_maliyetler[komsu] = g_maliyet
+
+                    # f(n) = g(n) + h(n)
+                    f_maliyet = g_maliyet + 0
+
+                    # Ebeveyn bilgisini kaydet
+                    path[komsu] = mevcut_istasyon
+
+                    # Öncelik kuyruğuna ekle
+                    heapq.heappush(pq, (f_maliyet, id(komsu), komsu))
+
+        # Rota bulunamazsa None dondur
+        return None
 # ==============================================================================================
 
 # Örnek Kullanım
